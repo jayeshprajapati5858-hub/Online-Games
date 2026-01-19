@@ -3,7 +3,7 @@
 <html lang="gu">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Shadow Strike: Elite Combat</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
@@ -13,17 +13,26 @@
             overflow: hidden;
             background-color: #050505;
             font-family: 'Inter', sans-serif;
-            touch-action: none;
+            touch-action: none; /* Prevent pull-to-refresh on mobile */
+            overscroll-behavior: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
         .font-orbitron {
             font-family: 'Orbitron', sans-serif;
         }
         canvas {
             display: block;
+            touch-action: none;
+        }
+        #root {
+            height: 100dvh; /* Dynamic viewport height for mobile browsers */
+            width: 100vw;
         }
         /* Custom Scrollbar for Lobby */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 4px;
         }
         ::-webkit-scrollbar-track {
             background: #0f0f0f;
@@ -31,9 +40,6 @@
         ::-webkit-scrollbar-thumb {
             background: #333;
             border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
         }
     </style>
 <script type="importmap">

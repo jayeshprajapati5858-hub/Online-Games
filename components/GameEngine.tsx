@@ -75,6 +75,9 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
   const rightTouchStartPos = useRef<Vector | null>(null);
   const rightTouchStartTime = useRef(0);
 
+  // Responsive dimensions
+  const viewportRef = useRef({ width: window.innerWidth, height: window.innerHeight });
+
   const playerRef = useRef<Entity>({
     id: 'player',
     pos: { x: window.innerWidth / 2, y: window.innerHeight / 2 },
@@ -96,10 +99,13 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
     const margin = 200;
     const side = Math.floor(Math.random() * 4);
     let x, y;
-    if (side === 0) { x = Math.random() * window.innerWidth; y = -margin; }
-    else if (side === 1) { x = window.innerWidth + margin; y = Math.random() * window.innerHeight; }
-    else if (side === 2) { x = Math.random() * window.innerWidth; y = window.innerHeight + margin; }
-    else { x = -margin; y = Math.random() * window.innerHeight; }
+    const vw = viewportRef.current.width;
+    const vh = viewportRef.current.height;
+
+    if (side === 0) { x = Math.random() * vw; y = -margin; }
+    else if (side === 1) { x = vw + margin; y = Math.random() * vh; }
+    else if (side === 2) { x = Math.random() * vw; y = vh + margin; }
+    else { x = -margin; y = Math.random() * vh; }
 
     const types = [EnemyType.STANDARD, EnemyType.RUNNER, EnemyType.TANK, EnemyType.SNIPER, EnemyType.SPRINTER, EnemyType.HEAVY];
     const type = types[Math.floor(Math.random() * types.length)];
@@ -128,8 +134,10 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
   };
 
   const spawnBarrel = () => {
-    const x = 100 + Math.random() * (window.innerWidth - 200);
-    const y = 100 + Math.random() * (window.innerHeight - 200);
+    const vw = viewportRef.current.width;
+    const vh = viewportRef.current.height;
+    const x = 100 + Math.random() * (vw - 200);
+    const y = 100 + Math.random() * (vh - 200);
     barrelsRef.current.push({
         id: Math.random().toString(),
         pos: { x, y },
@@ -248,6 +256,8 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
   const update = (time: number) => {
     const now = Date.now();
     const p = playerRef.current;
+    const vw = viewportRef.current.width;
+    const vh = viewportRef.current.height;
     
     if (shakeRef.current > 0) shakeRef.current *= 0.85;
     if (damageFlashRef.current > 0) damageFlashRef.current *= 0.92;
@@ -297,8 +307,9 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
       else for(let i = -2; i <= 2; i++) shoot(p, p.angle + (i * 0.12), false, 15, 20);
     }
 
-    p.pos.x = Math.max(p.radius, Math.min(window.innerWidth - p.radius, p.pos.x));
-    p.pos.y = Math.max(p.radius, Math.min(window.innerHeight - p.radius, p.pos.y));
+    // Keep player in bounds (Responsive)
+    p.pos.x = Math.max(p.radius, Math.min(vw - p.radius, p.pos.x));
+    p.pos.y = Math.max(p.radius, Math.min(vh - p.radius, p.pos.y));
 
     // Update PowerUps
     powerUpsRef.current.forEach((pu, idx) => {
@@ -368,7 +379,7 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
       proj.pos.x += proj.velocity.x * (proj.ownerId === 'player' ? 1.0 : frameSlowMo);
       proj.pos.y += proj.velocity.y * (proj.ownerId === 'player' ? 1.0 : frameSlowMo);
       
-      if (proj.pos.x < -100 || proj.pos.x > window.innerWidth + 100 || proj.pos.y < -100 || proj.pos.y > window.innerHeight + 100) {
+      if (proj.pos.x < -100 || proj.pos.x > vw + 100 || proj.pos.y < -100 || proj.pos.y > vh + 100) {
         projectilesRef.current.splice(idx, 1);
         return;
       }
@@ -404,7 +415,7 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
                 levelRef.current++;
                 setCurrentLevel(levelRef.current);
                 soundService.playLevelUp();
-                addFloatingText(window.innerWidth/2, window.innerHeight/2, `LEVEL ${levelRef.current}`, '#facc15', true);
+                addFloatingText(vw/2, vh/2, `LEVEL ${levelRef.current}`, '#facc15', true);
               }
             }
           }
@@ -536,9 +547,13 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
   useEffect(() => {
     const handleTouchStart = (e: TouchEvent) => {
       e.preventDefault();
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        if (touch.clientX < window.innerWidth / 2) {
+        // Split screen: Left half moves, Right half aims/shoots
+        if (touch.clientX < vw / 2) {
           joystickStart.current = { x: touch.clientX, y: touch.clientY };
           joystickPos.current = { x: touch.clientX, y: touch.clientY };
         } else {
@@ -550,9 +565,11 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
     };
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault();
+      const vw = window.innerWidth;
+      
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        if (joystickStart.current && touch.clientX < window.innerWidth / 2) {
+        if (joystickStart.current && touch.clientX < vw / 2) {
           joystickPos.current = { x: touch.clientX, y: touch.clientY };
         }
         if (fireTouchId.current === touch.identifier) {
@@ -564,9 +581,10 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
     };
     const handleTouchEnd = (e: TouchEvent) => {
       e.preventDefault();
+      const vw = window.innerWidth;
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        if (joystickStart.current && touch.clientX < window.innerWidth / 2) {
+        if (joystickStart.current && touch.clientX < vw / 2) {
           joystickStart.current = null; joystickPos.current = null;
         }
         if (fireTouchId.current === touch.identifier) {
@@ -584,7 +602,18 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
     window.addEventListener('touchstart', handleTouchStart, { passive: false });
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     window.addEventListener('touchend', handleTouchEnd, { passive: false });
-    const resize = () => { if (canvasRef.current) { canvasRef.current.width = window.innerWidth; canvasRef.current.height = window.innerHeight; } };
+    
+    const resize = () => { 
+        if (canvasRef.current) { 
+            canvasRef.current.width = window.innerWidth; 
+            canvasRef.current.height = window.innerHeight; 
+        }
+        viewportRef.current = { width: window.innerWidth, height: window.innerHeight };
+        // Clamp player
+        const p = playerRef.current;
+        p.pos.x = Math.max(p.radius, Math.min(window.innerWidth - p.radius, p.pos.x));
+        p.pos.y = Math.max(p.radius, Math.min(window.innerHeight - p.radius, p.pos.y));
+    };
     window.addEventListener('resize', resize);
     resize();
     requestRef.current = requestAnimationFrame(update);
@@ -604,11 +633,11 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
       <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
         <div className="flex flex-col gap-1">
           <div className="text-white font-orbitron text-[10px] opacity-70 tracking-widest uppercase">System Integrity</div>
-          <div className="w-44 h-3 bg-zinc-900 rounded-full border border-zinc-700 overflow-hidden">
+          <div className="w-32 md:w-44 h-3 bg-zinc-900 rounded-full border border-zinc-700 overflow-hidden">
             <div className={`h-full transition-all duration-200 ${playerHealth < 30 ? 'bg-red-600 animate-pulse' : 'bg-blue-600'}`} style={{ width: `${Math.max(0, playerHealth)}%` }} />
           </div>
           <div className="text-zinc-500 text-[10px] font-orbitron mt-2 uppercase">Core Pulse</div>
-          <div className="w-44 h-1.5 bg-zinc-900 rounded-full border border-zinc-800 overflow-hidden">
+          <div className="w-32 md:w-44 h-1.5 bg-zinc-900 rounded-full border border-zinc-800 overflow-hidden">
             <div className={`h-full transition-all duration-200 ${dodgeCooldownPercent === 100 ? 'bg-yellow-400' : 'bg-zinc-600'}`} style={{ width: `${dodgeCooldownPercent}%` }} />
           </div>
         </div>
