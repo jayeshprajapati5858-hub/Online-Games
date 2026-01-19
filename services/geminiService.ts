@@ -1,19 +1,21 @@
 
 import { GoogleGenAI } from "@google/genai";
 
-// Fix: Direct initialization from process.env.API_KEY
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Prevent crash if API key is not set in Vercel
+const apiKey = process.env.API_KEY || "dummy_key_for_init";
+const ai = new GoogleGenAI({ apiKey });
 
 export const getCombatTip = async (score: number): Promise<string> => {
+  if (apiKey === "dummy_key_for_init") return "દુશ્મનોથી બચો અને સચોટ નિશાન લગાવો!";
+  
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `તમે એક પ્રોફેશનલ ગેમ ગાઈડ છો. ખેલાડીનો સ્કોર ${score} છે. તેને એક નાની અને પ્રેરણાદાયી 'Combat Tip' આપો (ગુજરાતીમાં). Keep it under 15 words.`,
+      contents: `You are a pro game coach. Player score: ${score}. Give a short, punchy combat tip in Gujarati (under 10 words).`,
       config: {
         temperature: 0.7,
       },
     });
-    // Fix: Access .text property, not a function
     return response.text || "દુશ્મનોથી બચો અને સચોટ નિશાન લગાવો!";
   } catch (error) {
     console.error("Gemini Error:", error);
@@ -22,13 +24,14 @@ export const getCombatTip = async (score: number): Promise<string> => {
 };
 
 export const getDailyRewardText = async (): Promise<string> => {
+  if (apiKey === "dummy_key_for_init") return "આજનું ઇનામ મેળવો!";
+
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: "Generate a catchy 1-line 'Daily Earning Bonus' message in Gujarati for an action game.",
+      contents: "Generate a hype, 1-line 'Daily Earning Bonus' message in Gujarati for an action game.",
       config: { temperature: 0.9 },
     });
-    // Fix: Access .text property, not a function
     return response.text || "આજનું ઇનામ મેળવો અને ગેમ રમો!";
   } catch (error) {
     return "તમારું દૈનિક બોનસ અહીં છે!";
