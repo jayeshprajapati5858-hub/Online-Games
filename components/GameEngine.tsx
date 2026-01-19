@@ -222,10 +222,12 @@ const GameEngine: React.FC<Props> = ({ onGameOver }) => {
     addFloatingText(playerRef.current.pos.x, playerRef.current.pos.y - 50, "DASH!", "#60a5fa", true);
   };
 
-  // Fix: Added missing switchWeapon function
   const switchWeapon = () => {
-    setWeapon(prev => prev === WeaponType.RIFLE ? WeaponType.SHOTGUN : WeaponType.RIFLE);
-    soundService.playLevelUp();
+    const next = weapon === WeaponType.RIFLE ? WeaponType.SHOTGUN : WeaponType.RIFLE;
+    setWeapon(next);
+    soundService.playPowerUp();
+    addFloatingText(playerRef.current.pos.x, playerRef.current.pos.y - 40, `UPGRADE: ${next}`, '#fff', true);
+    createParticles(playerRef.current.pos.x, playerRef.current.pos.y, next === WeaponType.RIFLE ? '#60a5fa' : '#fbbf24', 20, 10);
   };
 
   const shoot = (from: Entity, angle: number, isEnemy: boolean, damage: number, speed: number) => {
